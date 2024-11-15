@@ -1,0 +1,322 @@
+========== FILE: DOCKERFILE ==========
+
+
+
+ 
+
+========== FILE: README.md ==========
+
+
+
+ 
+
+========== FILE: .env ==========
+
+
+
+ 
+
+========== FILE: app.py ==========
+
+# app.py
+import dash
+from dash import Dash, html, dcc
+import dash_bootstrap_components as dbc
+
+# Initialize the Dash app with a Bootstrap theme
+app = Dash(
+    __name__,
+    use_pages=True,
+    external_stylesheets=[dbc.themes.BOOTSTRAP],
+    suppress_callback_exceptions=True
+)
+server = app.server
+
+# Define the app layout
+app.layout = dbc.Container(
+    fluid=True,
+    children=[
+        # Navigation Bar
+        dbc.NavbarSimple(
+            brand="Watch Auction Explorer",
+            brand_href="/",
+            color="dark",
+            dark=True,
+            children=[
+                dbc.NavItem(dbc.NavLink("Data Explorer", href="/watch_collection")),
+                #dbc.NavItem(dbc.NavLink("Personal Collection", href="/personal-collection")),
+                #dbc.NavItem(dbc.NavLink("Trends & Analysis", href="/trends-analysis")),
+                #dbc.NavItem(dbc.NavLink("Test Page", href="/test-page")),
+            ],
+        ),
+        # Main Content
+        dbc.Container(
+            id="page-content",
+            className="mt-4",
+            children=dash.page_container,
+        ),
+    ],
+)
+
+if __name__ == "__main__":
+    app.run_server(debug=True)
+
+
+ 
+
+========== FILE: output.txt ==========
+
+
+
+ 
+
+========== FILE: utils/datautils.py ==========
+
+import pandas as pd
+
+def get_data():
+
+    df = pd.read_excel("/Users/sachabanks/Downloads/Sotheby's Results.xlsx")
+
+    df = df[df.columns.drop(list(df.filter(regex='Unnamed')))]
+
+    return df
+
+
+ 
+
+========== FILE: utils/fakedata.py ==========
+
+import random
+from datetime import datetime, timedelta
+import pandas as pd
+
+# this should not be taking this long to do 
+
+def generate_watch_data(num_records=100):
+    # Watch brands and their typical collections/models
+
+    watch_data = {
+        'Rolex': {
+            'collections': ['Submariner', 'Daytona', 'DateJust', 'GMT-Master II', 'Day-Date', 'Explorer', 'Air-King'],
+            'min_price': 5000,
+            'max_price': 100000
+        },
+        'Patek Philippe': {
+            'collections': ['Nautilus', 'Calatrava', 'Aquanaut', 'Grand Complications', 'Golden Ellipse'],
+            'min_price': 20000,
+            'max_price': 500000
+        },
+        'Audemars Piguet': {
+            'collections': ['Royal Oak', 'Royal Oak Offshore', 'Code 11.59', 'Millenary'],
+            'min_price': 15000,
+            'max_price': 200000
+        },
+        'Omega': {
+            'collections': ['Speedmaster', 'Seamaster', 'Constellation', 'De Ville'],
+            'min_price': 3000,
+            'max_price': 50000
+        },
+        'Cartier': {
+            'collections': ['Tank', 'Santos', 'Ballon Bleu', 'Pasha', 'Drive'],
+            'min_price': 4000,
+            'max_price': 80000
+        }
+    }
+
+    # Case materials and sizes
+    case_materials = ['Stainless Steel', 'Yellow Gold', 'White Gold', 'Rose Gold', 'Platinum', 'Titanium']
+    case_sizes = ['36mm', '38mm', '40mm', '41mm', '42mm', '44mm']
+
+    # Condition descriptions
+    conditions = ['Excellent', 'Very Good', 'Good', 'Fair']
+
+    # Generate data
+    records = []
+    end_date = datetime.now()
+    start_date = end_date - timedelta(days=365*2)  # Last 2 years
+
+    for _ in range(num_records):
+        # Select brand and collection
+        brand = random.choice(list(watch_data.keys()))
+        collection = random.choice(watch_data[brand]['collections'])
+        
+        # Generate reference number
+        ref_number = f"{random.randint(100000, 999999)}"
+        
+        # Generate year of manufacture
+        year = random.randint(1950, 2024)
+        
+        # Generate price details
+        base_price = random.randint(watch_data[brand]['min_price'], watch_data[brand]['max_price'])
+        estimate_low = int(base_price * 0.9)
+        estimate_high = int(base_price * 1.1)
+        
+        # Determine if sold and final price
+        sold = random.choice([True, False])
+        if sold:
+            # Sometimes watches go for well above or below estimate
+            price_multiplier = random.uniform(0.7, 1.5)
+            sold_price = int(base_price * price_multiplier)
+        else:
+            sold_price = None
+
+        # Generate auction date
+        auction_date = start_date + timedelta(days=random.randint(0, 365*2))
+        
+        # Generate additional details
+        has_box = random.choice([True, False])
+        has_papers = random.choice([True, False])
+        condition = random.choice(conditions)
+        case_material = random.choice(case_materials)
+        case_size = random.choice(case_sizes)
+
+        # we also need to add place holder images 
+        image = 'https://imageplaceholder.net/600'
+        
+        if sold_price is not None:
+            if sold_price > estimate_high:
+                estimate = 'higher'
+            elif sold_price < estimate_low:
+                estimate = 'lower'
+            else:
+                estimate = 'wthin estimate'
+        else: 
+            estimate = None
+
+        record = {
+            'brand': brand,
+            'collection': collection,
+            'reference': ref_number,
+            'case_material': case_material,
+            'case_size': case_size,
+            'year': year,
+            'condition': condition,
+            'estimate_low': estimate_low,
+            'estimate_high': estimate_high,
+            'sold': sold,
+            'sold_price': sold_price,
+            'auction_date': auction_date.strftime('%Y-%m-%d'),
+            'has_box': has_box,
+            'has_papers': has_papers,
+            'lot_number': random.randint(1, 500),
+            'movement': 'Automatic' if random.random() > 0.2 else 'Manual',
+            'dial_color': random.choice(['Black', 'White', 'Blue', 'Silver', 'Champagne']),
+            'auction_house': random.choice(['Christie\'s', 'Sotheby\'s', 'Phillips', 'Bonhams', 'Antiquorum']),
+            'image': image,
+            'estimate': estimate
+        }
+        records.append(record)
+
+    return pd.DataFrame(records)
+
+df = generate_watch_data(100)
+
+print(df.columns)
+
+
+
+ 
+
+========== FILE: pages/watch_collection.py ==========
+
+import dash
+from dash import html, dcc, callback, Output, Input, State
+import dash_bootstrap_components as dbc
+import dash_table
+import pandas as pd
+import plotly.express as px
+from utils.fakedata import generate_watch_data
+
+dash.register_page(__name__, path="/watch_collection")
+
+# Load the data (Replace 'your_data.csv' with your actual data file)
+watch_data_df = generate_watch_data(1000)
+
+layout = html.Div(
+    [
+        html.H2("Watch Collection", className="mb-4"),
+        dcc.Tabs(
+            id="tabs",
+            value="my-watches",
+            children=[
+                dcc.Tab(label="My Watches", value="my-watches"),
+                dcc.Tab(label="Followed Watches", value="followed-watches"),
+            ],
+        ),
+        html.Div(
+            id="content",
+            children=[
+                html.Div(
+                    [
+                        # Summary section
+                        html.Div(
+                            [
+                                html.H3("£" + f"{watch_data_df['sold_price'].sum():,.2f}", className="display-4"),
+                                html.P("Current estimated value"),
+                                html.Div(
+                                    [
+                                        html.P(
+                                            f"+£{watch_data_df['sold_price'].sum():,.2f}",
+                                            className="text-success mb-0",
+                                        ),
+                                        html.P("Profit", className="text-success"),
+                                    ]
+                                ),
+                            ],
+                            className="p-4 bg-light rounded",
+                        ),
+                        html.Div("Performance in detail", className="mt-2"),
+                    ],
+                    className="mb-4",
+                ),
+                # Watch list
+                html.Div(
+                    [
+                        html.H4(f"{len(watch_data_df)} watch owned"),
+                        dbc.Row(
+                            [
+                                dbc.Col(
+                                    dbc.Card(
+                                        [
+                                            dbc.CardImg(src=row["image"], top=True),
+                                            dbc.CardBody(
+                                                [
+                                                    html.H5(row["name"], className="card-title"),
+                                                    dbc.Badge(
+                                                        "Very popular",
+                                                        color="warning",
+                                                        className="mb-2",
+                                                        pill=True,
+                                                    )
+                                                    if row["is_popular"]
+                                                    else None,
+                                                    html.P(
+                                                        f"£{row['sold_price']:,.2f}",
+                                                        className="card-text display-5",
+                                                    ),
+                                                    html.P(
+                                                        f"+{row['profit_percentage']}%",
+                                                        className="text-success",
+                                                    ),
+                                                ]
+                                            ),
+                                        ],
+                                        className="h-100",
+                                    )
+                                )
+                                for _, row in watch_data_df.iterrows()
+                            ]
+                        ),
+                        # Add watch button
+                        dbc.Button("+ Add a watch", color="secondary", className="mt-4"),
+                    ]
+                ),
+            ],
+        ),
+    ]
+)
+
+
+ 
+
